@@ -23,7 +23,7 @@ def generate_wordcloud(tweets):
     logging.debug("Wordcloud saved to %s", filepath)
     return filepath
 
-@app.route('/')
+@app.route('/home')
 def hello_twitter():
     return 'Hello Twitter'
 
