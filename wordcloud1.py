@@ -1,15 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import os
 import uuid
 import logging
-#from flask_ngrok import run_with_ngrok
 
 app = Flask(__name__)
 CORS(app)
-#run_with_ngrok(app)
+
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -21,7 +19,7 @@ def generate_wordcloud(tweets):
     filepath = os.path.join('static', filename)
     wordcloud.to_file(filepath)
     logging.debug("Wordcloud saved to %s", filepath)
-    return filepath
+    return filename
 
 @app.route('/home')
 def hello_twitter():
@@ -41,14 +39,19 @@ def extract_tweets():
         if not all(isinstance(text, str) for text in tweet_texts):
             return jsonify({"error": "Invalid tweet data"}), 400
 
-        wordcloud_url = generate_wordcloud(tweet_texts)
+        filename = generate_wordcloud(tweet_texts)
+        wordcloud_url = f"/static/{filename}"
         return jsonify({"wordcloud_url": wordcloud_url, "tweets": tweet_texts})
     except Exception as e:
         logging.exception("An error occurred while processing the request")
         return jsonify({"error": str(e)}), 500
 
+# Serve static files (word cloud images)
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
+
 if __name__ == '__main__':
     if not os.path.exists('static'):
         os.makedirs('static')
     app.run(debug=True)
-#,port=6004  
