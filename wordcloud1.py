@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+#import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import os
 import uuid
@@ -16,10 +17,13 @@ def generate_wordcloud(tweets):
     text = ' '.join(tweets)
     wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
     filename = f"{uuid.uuid4()}.png"
-    filepath = os.path.join('static', filename)
+    static_folder = os.path.join(app.root_path, 'static')
+    if not os.path.exists(static_folder):
+        os.makedirs(static_folder)
+    filepath = os.path.join(static_folder, filename)
     wordcloud.to_file(filepath)
     logging.debug("Wordcloud saved to %s", filepath)
-    return filename
+    return filepath
 
 @app.route('/home')
 def hello_twitter():
@@ -39,19 +43,12 @@ def extract_tweets():
         if not all(isinstance(text, str) for text in tweet_texts):
             return jsonify({"error": "Invalid tweet data"}), 400
 
-        filename = generate_wordcloud(tweet_texts)
-        wordcloud_url = f"/static/{filename}"
+        wordcloud_filepath = generate_wordcloud(tweet_texts)
+        wordcloud_url = f"/static/{os.path.basename(wordcloud_filepath)}"
         return jsonify({"wordcloud_url": wordcloud_url, "tweets": tweet_texts})
     except Exception as e:
         logging.exception("An error occurred while processing the request")
         return jsonify({"error": str(e)}), 500
 
-# Serve static files (word cloud images)
-@app.route('/static/<path:path>')
-def send_static(path):
-    return send_from_directory('static', path)
-
 if __name__ == '__main__':
-    if not os.path.exists('static'):
-        os.makedirs('static')
     app.run(debug=True)
