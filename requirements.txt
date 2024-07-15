@@ -4,3 +4,4 @@ requests
 gunicorn==20.1.0
 wordcloud==1.9.3
 uuid
+nltk

@@ -1,10 +1,17 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-#import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import os
 import uuid
 import logging
+import re
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import nltk
+
+# Ensure the necessary NLTK data is downloaded
+nltk.download('punkt')
+nltk.download('stopwords')
 
 app = Flask(__name__)
 CORS(app)
@@ -12,9 +19,23 @@ CORS(app)
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
 
+stop_words = set(stopwords.words('english'))
+
+def clean_text(text):
+    # Remove URLs
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+    # Remove special characters and symbols
+    text = re.sub(r'\W', ' ', text)
+    # Tokenize the text
+    words = word_tokenize(text)
+    # Remove stopwords
+    words = [word.lower() for word in words if word.lower() not in stop_words]
+    return ' '.join(words)
+
 def generate_wordcloud(tweets):
     logging.debug("Generating wordcloud for tweets: %s", tweets)
-    text = ' '.join(tweets)
+    cleaned_tweets = [clean_text(tweet) for tweet in tweets]
+    text = ' '.join(cleaned_tweets)
     wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
     filename = f"{uuid.uuid4()}.png"
     static_folder = os.path.join(app.root_path, 'static')
